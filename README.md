@@ -30,7 +30,7 @@ This README provides instructions on how to run the server code for the multiple
 
 ## Client Repository
 To run the full project, you also need to set up the client. Please refer to the client repository and follow the instructions in its README:
-- [Client Repository](https://github.com/yourusername/multiple-user-text-editor-client)
+- [Client Repository](https://github.com/Monika-dhiman/multiple-user-text-editor-client)
 
 ## Additional Notes
 - Ensure both the server and client are running simultaneously for the application to function correctly.

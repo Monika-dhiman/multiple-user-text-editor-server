@@ -1,4 +1,4 @@
-const documentRepository = require("./infrastructure/repositories/document/document.repository");
+const { documentService } = require("./features/documents/documents.service");
 
 require("dotenv").config();
 
@@ -16,7 +16,7 @@ io.on("connection", (socket) => {
   //   console.log("new user connected", socket.id);
 
   socket.on("get-document", async (documentId) => {
-    const document = await findOneOrCreateDocument(documentId);
+    const document = await documentService.findOneOrCreateDocument(documentId);
 
     socket.documentId = documentId;
 
@@ -26,8 +26,8 @@ io.on("connection", (socket) => {
 
     users[documentId][socket.id] = {
       cursor: null,
-      color: `#${Math.floor(Math.random() * 16777215).toString(16)}`,
-      name: `User-${socket.id.slice(0, 5)}`, // Assign a unique name
+      color: generateCursorColor(),
+      name: `User-${socket.id.slice(0, 5)}`,
     };
 
     socket.join(documentId);
@@ -49,7 +49,7 @@ io.on("connection", (socket) => {
     });
 
     socket.on("save-document", async (data) => {
-      await findOneAndUpdateDocument(documentId, { data });
+      await documentService.findOneAndUpdateDocument(documentId, { data });
     });
 
     // Handle cursor updates
@@ -82,15 +82,9 @@ io.on("connection", (socket) => {
       console.log("user disconnected", socket.id);
     });
   });
-
-  const findOneOrCreateDocument = async (id) => {
-    if (id == null) return;
-    const document = await documentRepository.findDocumentById({ _id: id });
-    if (document) return document;
-    return await documentRepository.createDocument({ _id: id, data: "" });
-  };
-
-  const findOneAndUpdateDocument = async (id, data) => {
-    return await documentRepository.updateDocument({ _id: id }, data);
-  };
 });
+
+const generateCursorColor = () => {
+  const randomColor = () => Math.floor(Math.random() * 128 + 128).toString(16).padStart(2, '0');
+  return `#${randomColor()}${randomColor()}${randomColor()}`;
+};

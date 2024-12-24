@@ -1,7 +1,7 @@
 const Document = require("../../../domain/document.entity");
 const BaseRepository = require("../base.repositories");
 
-class DocumentsRepository extends BaseRepository {
+class DocumentRepository extends BaseRepository {
   constructor() {
     super({ model: Document });
   }
@@ -27,4 +27,4 @@ class DocumentsRepository extends BaseRepository {
   }
 }
 
-module.exports = new DocumentsRepository();
+exports.documentRepository = new DocumentRepository();
