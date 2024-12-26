@@ -1,4 +1,4 @@
-const Document = require("../../../domain/document.entity");
+const Document = require("../../../domain/documents/documents.entity");
 const BaseRepository = require("../base.repositories");
 
 class DocumentRepository extends BaseRepository {
