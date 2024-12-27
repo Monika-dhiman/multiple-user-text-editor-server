@@ -64,7 +64,7 @@ class BaseRepository {
        * @returns {Promise} - A promise that resolves with the result of the update operation.
        */
     update(query = {}, payload, options = {}) {
-        options.lean = true;
+        // options.lean = true;
         options.new = true;
         options.runValidators = true;
         return this.model.findOneAndUpdate(query, payload, options);
