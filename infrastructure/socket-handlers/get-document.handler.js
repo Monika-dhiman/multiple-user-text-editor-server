@@ -1,13 +1,25 @@
 const { documentService } = require("../../features/documents/documents.service");
+const redisClient = require("../database/redis-connection/redis-connection");
 
 const users = {};
+const REDIS_KEY_PREFIX = "document:";
+const REDIS_TTL = 60 * 60 * 24; // 24 hours
 module.exports = async (io, socket) => {
   socket.on("get-document", async (documentId) => {
     try {
-      const document = await documentService.findOneOrCreateDocument(
-        documentId
-      );
-
+      // const documentdjfks = await documentService.findOneOrCreateDocument(
+      //   documentId
+      // );
+      let document = await redisClient.get(`${REDIS_KEY_PREFIX}${documentId}`);
+      console.log("document JDKDKJGDKJGKDFJ", JSON.parse(document));
+      if (!document) {
+        document = await documentService.findOneOrCreateDocument(documentId);
+        await redisClient.set(
+          `${REDIS_KEY_PREFIX}${documentId}`,
+          JSON.stringify(document),
+          { EX: 60 * 60 * 24 }
+        );
+      }
       socket.documentId = documentId;
 
       if (!users[documentId]) {
@@ -21,7 +33,8 @@ module.exports = async (io, socket) => {
       };
 
       socket.join(documentId);
-      socket.emit("load-document", document.data);
+      console.log("document.data", JSON.parse(document));
+      socket.emit("load-document", typeof(document) === "string" ? JSON.parse(document) : document.data);
 
       // Send existing cursors to the new user
       socket.emit("update-cursors", users[documentId]);
@@ -39,10 +52,13 @@ module.exports = async (io, socket) => {
 
     socket.on("send-changes", (delta) => {
       socket.broadcast.to(documentId).emit("receive-changes", delta);
+      redisClient.set(`${REDIS_KEY_PREFIX}${documentId}`, JSON.stringify(delta));
     });
 
     socket.on("save-document", async (data) => {
       await documentService.findOneAndUpdateDocument(documentId, { data });
+      const redisSEt = await redisClient.set(`${REDIS_KEY_PREFIX}${documentId}`, JSON.stringify(data));
+      console.log(redisSEt)
     });
 
     // Handle cursor updates

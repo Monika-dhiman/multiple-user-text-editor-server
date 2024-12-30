@@ -4,7 +4,8 @@ const cors = require("cors");
 const getDocumentHandler = require("./infrastructure/socket-handlers/get-document.handler");
 
 //database connection
-require("./infrastructure/database/mongo-db-connection");
+require("./infrastructure/database/mongo-db-connection/mongo-db-connection");
+require ("./infrastructure/database/redis-connection/redis-connection");
 
 const app = express();
 const server = app.listen(process.env.APP_PORT, () => {
