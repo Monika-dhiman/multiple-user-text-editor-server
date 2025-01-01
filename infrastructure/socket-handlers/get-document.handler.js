@@ -1,17 +1,8 @@
 const {
   documentService,
 } = require("../../features/documents/documents.service");
-const {
-  publishChanges,
-  subscribeToChanges,
-} = require("../database/redis/pub-sub");
-const { redisClient } = require("../database/redis/redis-connection");
-
+const { publishChanges } = require("../database/redis/pub-sub");
 const users = {};
-const REDIS_KEY_PREFIX = "document:";
-const REDIS_TTL = 60 * 60 * 24;
-
-
 
 module.exports = async (io, socket) => {
   socket.on("get-document", async (documentId) => {
@@ -32,7 +23,7 @@ module.exports = async (io, socket) => {
       };
 
       socket.join(documentId);
-      socket.emit("load-document", document);
+      socket.emit("load-document", document.data);
 
       // Send existing cursors to the new user
       socket.emit("update-cursors", users[documentId]);
@@ -48,18 +39,9 @@ module.exports = async (io, socket) => {
       console.error(error.message);
     }
 
-    socket.on("send-changes", (delta) => {
-      // socket.broadcast.to(documentId).emit("receive-changes", delta);
-      publishChanges(documentId, delta);
-    });
-
-    socket.on("save-document", async (data) => {
-      await redisClient.set(
-        `${REDIS_KEY_PREFIX}${documentId}`,
-        JSON.stringify(data),
-        "EX",
-        REDIS_TTL
-      );
+    socket.on("send-changes", async ({delta,data}) => {
+      publishChanges(documentId, delta, socket.id);
+      await documentService.findOneAndUpdateDocument(documentId, data);
     });
 
     // Handle cursor updates
@@ -76,13 +58,13 @@ module.exports = async (io, socket) => {
     });
     socket.on("disconnect", () => {
       const { documentId } = socket;
-      
+
       if (documentId && users[documentId]) {
         delete users[documentId][socket.id];
-        
+
         // Notify remaining users in the document room
         io.to(documentId).emit("user-disconnected", socket.id);
-        
+
         // Clean up if no users are left in the document
         if (Object.keys(users[documentId]).length === 0) {
           delete users[documentId];

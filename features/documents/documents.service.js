@@ -12,15 +12,21 @@ class DocumentService {
     if (id == null) return;
 
     let document = await redisClient.get(`${REDIS_KEY_PREFIX}${id}`);
+
     if (document) return JSON.parse(document);
 
     document = await documentRepository.findDocumentById({ _id: id });
-    if (!document)
+    if (!document) {
       document = await documentRepository.createDocument({ _id: id, data: "" });
+    }
 
-    redisClient.set(`${REDIS_KEY_PREFIX}${id}`, JSON.stringify(document), {
-      EX: REDIS_TTL,
-    });
+    await redisClient.set(
+      `${REDIS_KEY_PREFIX}${id}`,
+      JSON.stringify(document),
+      {
+        EX: REDIS_TTL,
+      }
+    );
     return document;
   }
 
@@ -33,14 +39,17 @@ class DocumentService {
     return documentRepository.findDocumentById({ _id: id });
   }
 
-  async findOneAndUpdateDocument(id) {
-    if (id == null) return;
-    let document = await redisClient.get(`${REDIS_KEY_PREFIX}${id}`);
-    if (document) {
-      const data = JSON.parse(document);
-      await documentRepository.updateDocument({ _id: id }, { data: data });
-      return redisClient.del(`${REDIS_KEY_PREFIX}${id}`);
-    }
+  async findOneAndUpdateDocument(id, data) {
+    let document = null;
+    setTimeout(async () => {
+      document = await documentRepository.updateDocument(
+        { _id: id },
+        { data: data }
+      );
+      redisClient.set(`${REDIS_KEY_PREFIX}${id}`, JSON.stringify(document), {
+        EX: REDIS_TTL,
+      });
+    }, 5000);
   }
 }
 
