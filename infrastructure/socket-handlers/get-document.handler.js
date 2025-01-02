@@ -39,8 +39,12 @@ module.exports = async (io, socket) => {
       console.error(error.message);
     }
 
-    socket.on("send-changes", async ({delta,data}) => {
+    socket.on("send-changes", async (delta) => {
       publishChanges(documentId, delta, socket.id);
+    });
+
+    socket.on("save-document", async (data) => {
+      console.log("Document saved", data);
       await documentService.findOneAndUpdateDocument(documentId, data);
     });
 
@@ -56,6 +60,7 @@ module.exports = async (io, socket) => {
         });
       }
     });
+
     socket.on("disconnect", () => {
       const { documentId } = socket;
 
