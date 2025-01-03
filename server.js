@@ -1,13 +1,10 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
-const getDocumentHandler = require("./infrastructure/socket-handlers/get-document.handler");
-const {
-  connectRedis,
-} = require("./infrastructure/database/redis/redis-connection");
-const {
-  subscribeToChanges,
-} = require("./infrastructure/database/redis/pub-sub");
+const getDocumentHandler = require("./infrastructure/socket/handlers/documents/document.handler");
+const { connectRedis } = require("./infrastructure/database/redis/redis-connection");
+const { documentChangesSubscriber } = require("./infrastructure/database/redis/subscribers/documents/document-changes.subscriber");
+const { cursorChangesSubscriber } = require("./infrastructure/database/redis/subscribers/cursors/cursor-changes.subscriber");
 
 //database connection
 require("./infrastructure/database/mongo-db-connection/mongo-db-connection");
@@ -33,12 +30,8 @@ const io = require("socket.io")(server, {
   cors: corsOptions,
 });
 
-subscribeToChanges(async (data) => {
-  const socket = io.sockets.sockets.get(data.socketId);
-  if (socket) {
-    await socket.broadcast.to(data.documentId).emit("receive-changes", data.delta);
-  }
-});
+documentChangesSubscriber(io);
+cursorChangesSubscriber(io);
 
 io.on("connection", (socket) => {
   getDocumentHandler(io, socket);
